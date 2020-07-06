@@ -65,7 +65,7 @@ def model(nn.Model):
 
 
 
-## 훈련
+## 5.훈련
 
 * 모델을 구현 했으면 feature engineering을 거친 train data들을 모델에 넣어서 원하는 결과값이 나오도록 W(가중치),b(편향)의 값을 조정한다.
 
@@ -108,4 +108,3 @@ or epoch in range(n_epochs):
 3. feature 추출하기
 4. modeling 하기
 5. trainning 하기
-6. 결과 도출
