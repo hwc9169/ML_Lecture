@@ -61,6 +61,8 @@ ht-1 = (Dh x 1)
 
 b = (Dh x 1)
 
+
+
 ## 2. 파이썬으로 RNN 구현하기
 
 ```python
@@ -98,13 +100,87 @@ print(total_hidden_states)
 
 
 
+## 3. 파이토치로 RNN 구현하기
+
+```python
+import torch
+import torch.nn as nn
+
+input_size = 5
+hidden_size = 8
+
+inputs = torch.Tensor(1, 10, 5)
+
+cell = nn.RNN(input_size, hidden_size, batch_first=True)
+outputs, status = cell(inputs)
+
+print(outputs.shape) #torch.Size([1, 10, 8])
+print(status.shape) #torch.Size([1, 1, 8])
+```
+
+nn.RNN의 인자 값은 차례대로 입력의 크기, 은닉 상태의 크기 그리고 마지막 batch_first=True를 통해 입력  텐서의 첫번째 차원이 배치 크기임을 알려줍니다
+
+RNN 셀은 두개의 입력을 리턴합니다 첫번째 리턴값은 모든 시점의 은닉 상태값, 두번째 리턴값은 마지막 시점의 은닉 상태값 입니다.
+
+
+
+## 4. 깊은 순환 신경망(Deep Recurrent Neural Network)
+
+RNN도 다수의 은닉층을 가질 수 있습니다. 첫번째 은닉층이 다음 은닉층의 모든 시점에 대해서 은닉 상태값을 다음 은닉층으로 보내주면 됩니다.
+
+깊은 순환 신경망을 파이토치로 구현할 때는 nn.RNN()의 인자로 num_layers에 값을 전달하여 층을 쌓으면 됩니다. 층이 2개인 깊은 신경망의 경우를 살펴보겠습니다.
+
+```python
+import torch.nn as nn
+import torch
+
+inputs = torch.Tensor(1, 10, 5)
+cell = nn.RNN(input_size=5, hidden_size=8, num_layers=2, batch_first=True)
+outputs, status = cell(inputs)
+
+print(outputs.shape) #torch.Size([1, 10, 8])
+print(status.shape) #torch.Size([2, 1, 8])
+```
+
+첫번째 리턴값의 크기는 층이 1개였던 RNN 셀 때와 같습니다. 여기서는 두번째 층의 모든 시점의 은닉 상태들입니다.
+
+두번째 리턴값의 크기는 층이 1개였던 RNN셀 때와 달리 2입니다. 여기서 크기는 (층의 개수, 배치 크기, 은닉 상태의 크기)에 해당합니다,
+
+
+## 5. 양방향 순환 신경망(Bidirectional Recurrent Neural Network)
+
+양방향 순환 신경망은 시점 t에서의 출력값을 예측할 때 이전 시점의 데이터뿐만 아니라, 이후 데이터로도 예측할 수 있다는 아이디어에 기반합니다. 예를 들어 하나의 문장에서 중간 단어를 예측할 때 앞 단어 뿐만 아니라 뒷 단어도 고려한다면 쉽게 예측할 수 있다는 말입니다.
+
+즉, RNN이 과거 시점(time step)의 데이터들을 참고해서, 정답을 예측하지만 실제 문제에서는 과거 시점의 데이터뿐만 아니라 향후 시점의 데이터도 고려해야 합니다. 그래서 이전 시점과 이후 시점의 데이터를 가지로 예측을 하기 위해 고안된 것이 양방향 RNN입니다.
+
+양방향 RNN은 하나의 출력값을 예측하기 위해 기본적으로 두개의 메모리 셀을 사용합니다. 첫 번째 메모리 셀은 앞 시점의 은닉 상태를 전달받아 현재의 은닉 상태를 계산하고(일반적인 RNN과 같은 동작), 두 번째 메모리 셀은 앞 시점의 은닉 상태가 아니라 뒤 시점의 은닉 상태를 전달 받아 현재의 은닉 상태를 계산합니다. 그리고 이 두 메모리 셀을 사용하여 출력값을 예측합니다.
+
+물론, 양방향 RNN도 다수의 은닉층을 가질 수 있습니다. 다른 인공 신경망 모델들도 마찬가지지만, 은닉층을 추가한다고 해서 모델의 성능이 무조건 좋아지는 것이 아닙니다. 학습할 수 있는 양이 ㅁ낳아지지만 반대로 훈련 데이터가 그만큼 많이 필요합니다.
+
+양방향 순환 신경망을 파이토치로 구현할 때는 nn.RNN()의 인자로 bidirectional에 값을 True로 전달하면 됩니다.
+
+```python
+import torch.nn as nn
+import torch
+
+inputs = torch.Tensor(1, 10, 5)
+cell = nn.RNN(input_size=5, hidden_size=8, num_layers=2, batch_first=True, bidirectional=True)
+outputs, status = cell(inputs)
+
+print(outputs.shape) #torch.Size([1, 10, 8x2])
+print(status.shape) #torch.Size([2x2, 1 ,8])
+```
+
+첫번째 리턴값의 크기는 단방향 RNN 셀 때보다 은닉 상태의 크기가 두 배가 됩니다. (배치 크기, 시퀀스 크기, 은닉 상태의 크기x2)
+
+두번째 리턴값의 크기는 (층의 개수x2, 배치 크기, 은닉 상태의 크기)를 가집니다. 이는 정방향 기준으로는 마지막 시점이 면서 역방향 기준에서는 첫번째 시점에 해당되는 출력값을 층의 개수만큼 쌓아 올린 결과 입니다.
+
 # 단어 정리
 
 * 피드 포워드 신경망(Feed Forward Neural Network) : 모든 입력 값이 전부 은닉층에서 활성화 함수를 지나 출력층 방향으로만 향하는 신경망 예로는 ANN과 CNN이 있다.
 
 * 셀(cell) : RNN에서 은닉층에서 활성화 함수를 거처 결과를 내보내는 노드. 이 셀은 이전의 값을 기억하려고 하는 메모리 역할도 수행하기 떄문에 메모리 셀 또는 RNN 셀이라고도 표현합니다.
-
 * 은닉 상태값(hidden state) : 메모리 셀이 출력층 방향과 다음 노드에 보내는 값
 
-  
+
 
