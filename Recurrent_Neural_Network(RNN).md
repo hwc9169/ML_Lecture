@@ -33,33 +33,39 @@ RNN은 입력과 출력의 길이를 다르게 설계 할 수 있기 때문에 �
 
 ### RNN에 대한 수식
 
-* 입력 값 : It
+* 입력 값 : xt
+
 * 입력층 가중치 : Wx
 
 * 은닉 상태값 : ht
-* 출력 값 : Ot
+
+* 출력 값 : yt
+
 * 출력층 가중치 : Wy
+
 * 이전 시점 은닉 상태값 : ht-1
+
 * 이전 시점 은닉 상태값(ht-1)의 가중치 : Wh
 
-ht = tanh(WxIt + ht-1Wh + b)
+  ht = tanh(Wx xt + Wh ht-1 + b)
 
-Ot = f(Wyht + b)  단, f는 비선형 활성화 함수
+  yt = f(Wyht + b)  단, f는 비선형 활성화 함수
 
 
 
 * 단어 벡터의 차원  :  d
+
 * 은닉 상태 크기 : Dh
 
-It = (d x 1)
+  xt = (d x 1)
 
-Wx = (Dh x d)
+  Wx = (Dh x d)
 
-Wh = (Dh x Dh)
+  Wh = (Dh x Dh)
 
-ht-1 = (Dh x 1)
+  ht-1 = (Dh x 1)
 
-b = (Dh x 1)
+  b = (Dh x 1)
 
 
 
@@ -203,13 +209,13 @@ Wx : 입력 가중치
 
 Wh : 은닉 상태 가중치
 
-it : 현재 시점의 입력값
+xt : 현재 시점의 입력값
 
-ot : 현재 시점의 출력값
+yt : 현재 시점의 출력값
 
 
 
-ht = tanh(Wx it + Wh ht-1 + b)
+ht = tanh(Wx xt + Wh ht-1 + b)
 
 
 
@@ -219,11 +225,257 @@ ht = tanh(Wx it + Wh ht-1 + b)
 
 ## 3. LSTM(Long Short-Term Memory)
 
-바닐라 RNN의 "시점이 충분히 길 때 앞의 정보가 손실된다."는 단점을 보완한 RNN의 일종을 장단기 메모리(Long Short-Term Memory)라고 하며, 줄여서 LSTM이라고 합니다. LSTM은 은닉층에 메모리 셀에 입력 게이트, 망각 게이트, 출력 게이트를 추가하여 불필요한 기억을 지우고, 필요한 기억들을 정합니다. 쉽게 말해서 LSTM은 은닉 상태를 계산하기가 복잡하고 셀 상태(cell state)라는 값을 추가하였습니다. 
+바닐라 RNN의 "시점이 충분히 길 때 앞의 정보가 손실된다."는 단점을 보완한 RNN의 일종을 장단기 메모리(Long Short-Term Memory)라고 하며, 줄여서 LSTM이라고 합니다. LSTM은 은닉층에 메모리 셀에 입력 게이트, 삭제 게이트, 출력 게이트를 추가하여 불필요한 기억을 지우고, 필요한 기억들을 정합니다. 쉽게 말해서 LSTM은 은닉 상태를 계산하기가 복잡하고 셀 상태(cell state)라는 값을 추가하였습니다. 
 
 
 
 셀 상태 또한 은닉 상태와 같이 이전 시점의 값이 현재 시점의 셀 상태의 입력으로 사용됩니다. 은닉 상태값과 셀 상태값을 구하기 위해서 새로 추가 된 3개의 게이트를 사용합니다. 각 게이트는 삭제 게이트, 입력 게이트, 출력 게이트 이며 이 3개의 게이트 모두 공통적으로 시그모이드 함수가 존재합니다. 시그모이드 함수를 지나면 0과 1 사이의 값이 나오게 되는데 이 값들을 가지고 게이트를 조절합니다. 아래의 내용과 함께 각 게이트에 대해서 알아보도록 하겠습니다.
+
+
+
+* 이하 식에서 sigmoid는 시그모이드 함수를 의미합니다.
+* 이하 식에서 tanh는 하이퍼볼릭탄젠트 함수를 의미합니다.
+* Wxi, Wxg, Wxf, Wxo는 각각 it와 함께 게이트에서 사용되는 4개의 가중치입니다.
+* Whi, Whg, Whf, Who는 각각 ht-1와 함께 게이트에서 사용되는 4개의 가중치입니다.
+* bi, bg, bf, bo는 각 게이트에서 사용되는 4개의 편향입니다.
+
+
+
+### (1) 입력 게이트
+
+ 입력게이트는 현재 정보를 기억하기 위한 게이트입니다. 우선 현재 시점 t의 x값과(input 값) 입력게이트로 이어지는 가중치 Wxi를 곱하고 이전시점 t-1의 ht-1(은닉 상태)가 입력게이트로 이어지는 Whi를 곱한 값을 더하여 시그모이드 함수를 지납니다. 이를 it라고 합니다.
+
+it = sigmoid(Wxi xt + Whi ht-1 + bi)
+
+
+
+그리고 현재 시점 t의  x값과 입력 게이트로 이어지는 가중치 Wxi를 곱한 값과 이전 시점 t-1의  ht-1가 입력 게이트로 이어지는 가중치 wxi를 곱한값을 더하여 하이퍼볼릭탄젠트 함수를 지납니다. 이를 gt라고 합니다
+
+gt = tanh(Wxi xt + Whi ht-1 + bi)
+
+
+
+시그모이드 함수를 지나면 0과 1 사이의 값이 하이퍼볼릭탄젠트 함수를 지나면 -1과 1 사이의 값 두 개가 나오게 됩니다. 이 두개의 값을 가지고 이번에 선택된 기억할 정보의 양을 정하는데, 구체적으로 어떻게 결정하는지 알아보겠습니다.
+
+
+
+### (2) 삭제 게이트
+
+삭제 게이트는 기억을 삭제하기 위한 게이트입니다. 현재 시점 t의 x값과 이전 시점 t-1의 ht-1이 시그모이드 함수를 지나게 됩니다. 시그모이드 함수를 지나면 0과 1 사이의 값이 나오게 되는데, 이 값이 곧 삭제 과정을 거친 정보의 양입니다. 0에 가까울수록 정보가 많이 삭제된 것이고 1에 가까울수록 온전히 기억된 것입니다. 이를 가지고 셀 상태를 구하게 됩니다.
+
+ft = sigmoid(Wxfxt+Whfht−1+bf)
+
+
+
+### (3) 셀 상태(장기 상태)
+
+셀 상태(Ct)를 LSTM에서 장기 상태라고 부릅니다. 그렇다면 셀 상태를 구하는 방법을 알아 보겠습니다. 삭제 게이트에서 일부 기억을 잃은 상태입니다. 
+
+입력 게이트에서 구한 it, gt 두 개의 값에 대해서 원소별 곱(entrywise product)을 진행합니다. (여기서 ∘가 연산자로 사용되었습니다. ) 다시 말해 같은 크기의 두 행렬이 있을 때 같은 위치의 성분끼리 곱하는 것을 말합니다.  
+
+입력 게이트에서 선택된 기억을 삭제 게이트의 결과값과 원소별 곱을 하고, 이 값을 입력 게이트의 계산 결과와 덧셈을 합니다. 이를 현재 시점 t의 셀 상태(Ct)라고 하며, 이 값은 다음 시점 t+1의 LSTM셀로 넘겨집니다.
+
+Ct = ft ∘ Ct-1 + it ∘ gt
+
+
+
+그렇다면 삭제 게이트와 입력 게이트의 영향력을 이해해봅시다. 삭제 게이트 ft가 0이 된다면, 이전 시점의 셀 상태값 Ct-1이 현재 시점의 셀 상태값 Ct에게 아무런 영향을 끼치지 않게됩니다. 이는 삭제 게이트가 완전히 닫히고 입력 게이트를 연 상태를 의미합니다. 반댈 입력 게이트의 it 값을 0이라고 한다면, 현재 시점의 셀 상태 값 Ct는 오직 이전 시점의 Ct-1의 영향만을 받습니다. 이는 입력 게이트를 완전히 닫고 삭제 게이트만을 연 상태를 의미합니다. 결론을 정리하면 삭제 게이트는 이전 시점의 입력을 얼마나 반영할지 결정하고, 입력 게이트는 현재 시점의 입력을 얼마나 반영할지 결정합니다.
+
+
+
+### (4) 출력 게이트와 은닉 상태(단기 상태)
+
+출력 게이트는 현재 시점 t의 xt값과 이전 시점 t-1의 은닉 상태 ht-1 시그모이드 함수를 지난 값입니다.  출력 게이트는 현재 시점 t의 은닉 상태 ht를 결정합니다
+
+ot = sigmoid(Wxo xt + Who ht-1 + bo)
+
+
+
+은닉 상태 ht를 단기 상태라고 부르는데, 은닉 상태는 장기 상태의 값이 tanh 함수를 지나 -1과 1사이의 값이 됩니다. 해당 값은 출력 게이트의 값과 연산되면서, 값이 걸러지는 효과가 발생합니다. 단기 상태의 값은 출력층으로도 향합니다.
+
+ht =  ot ∘ tanh(Ct)
+
+
+
+## 4. 파이토치의 nn.LSTM()
+
+파이토치에서 LSTM 셀을 사용하는 방법은 매우 간단합니다. 기존 RNN 셀을 사용하려 했을 때와 비교하며 설명해 보겠습니다.
+
+```python
+#기존의 RNN 코드
+nn.RNN(input_dim, hidden_size, batch_first=True)
+
+#LSTM 코드
+nn.LSTM(input_dim, hidden_size, batch_first=True)
+```
+
+
+
+# 03. 다대다 RNN
+
+이번에는 모든 시점의 입력에 대해서 모든 시점에 대해서 출력을 하는 다대다 RNN을 구현해봅시다.
+
+다대다 RNN의 대표적인 사용법
+
+* 품사 태깅
+* 개체명 인식
+
+
+
+## 1. 문자 단위 RNN
+
+입출력의 단위가 단어가 아니라 문자(char) 레벨로 하여 RNN을 구현합니다. RNN 구조가 달라진 것이 아니고 입출력 단위가 문자로 바뀌었을 뿐입니다. 그렇다면 다대다 문자 단위 RNN을 구현해봅시다.
+
+우선 필요한 도구들을 임포트합니다.
+
+```python
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import numpy as np
+```
+
+
+
+### 1. 훈련 데이터 전처리
+
+여기선 문자 시퀀스 apple을 받아 pple!를 출력하는 RNN을 구현해보겠습니다. 이렇게 구현하는 어떤 의미가 있는 것은 아니고, 그저 RNN의 동작을 이해하기 위한 목적입니다.
+
+입력 데이터와 레이블 데이터에 대해서 문자 집합(vocabulary)을 만듭니다.
+
+```python
+input_str = 'apple'
+label_str = 'pple!'
+char_vocab = sorted(list(set(input_str+label_str)))
+vocab_size = len(char_vocab)
+print('문자 집합 크기 : {}'.format(vocab_size)) #문자 집합 크기 : 5
+```
+
+현재 문자 집합에 총 5개의 문자 ' ! ', ' a ', ' e ', ' l ', ' p '가 있습니다. 이제 하이퍼파라미터를 정의 해보겠습니다.
+
+```python
+input_size = vocab_size #입력의 크기는 문자 집합 크기
+hidden_size = 5
+output_size = 5
+learning_rate = 0.1
+```
+
+이제 문자 집합에 고유한 정수를 부여합니다.
+
+```python
+char_to_index = { v : i for i, v in enumerate(char_vocab)}
+print(char_to_index) #{'!': 0, 'a': 1, 'e': 2, 'l': 3, 'p': 4}
+```
+
+반대로 정수를 통해 문자를 얻을 수 있는 index_to_char을 만듭니다.
+
+```python
+index_to_char = { i : v for i, v in enumerate(char_vocab)}
+print(index_to_char) #{0: '!', 1: 'a', 2: 'e', 3: 'l', 4: 'p'}
+```
+
+이제 입력 데이터와 레이블 데이터의  각 문자에 vocabulary을 이용하여 정수로 맵핑해보겠습니다.
+
+```python
+x_data = [index_to_char[i] for i in list(input_str)]
+y_data = [char_to_index[i] for i in list(label_str)]
+print(x_data) #[1, 4, 4, 3, 2]
+print(y_data) #[4, 4, 3, 2, 0]
+```
+
+파이토치의 nn.RNN()은 기본적으로 3차원 텐서를 입력받습니다.  
+
+```python
+ x_data	= x_data.unsqueeze(0)
+ y_data = y_data.unsqueeze(0)
+print(x_data) #[[1, 4, 4, 3, 2]]
+print(y_data) #[[4, 4, 3, 2, 0]]
+```
+
+입력 시퀀스의 각 문자들을 원-핫 벡터로 바꿔줍니다
+
+```python
+x_one_hot = [np.eye(vocab-size)[x] for x in x_data]
+print(x_one_hot)
+#[array([[0., 1., 0., 0., 0.],
+       [0., 0., 0., 0., 1.],
+       [0., 0., 0., 0., 1.],
+       [0., 0., 0., 1., 0.],
+       [0., 0., 1., 0., 0.]])]
+```
+
+입력 데이터와 레이블 데이터를 텐서로 바꿔줍니다.
+
+```python
+X = torch.FloatTensor(x_one_hot)
+Y = torch.LongTensor(y_data)
+print('훈련 데이터의 크기 : {}'.format(X.shape)) #훈련 데이터의 크기 : torch.Size([1, 5, 5])
+print('레이블의 크기 : {}'.format(Y.shape)) #레이블의 크기 : torch.Size([1, 5])
+```
+
+
+
+### 2. 모델 구현하기
+
+이제 RNN 모델을 구현해봅시다. 아래에서 fc는 완전 연결층(fully-conneted layer)을 의미하며 출력층으로 사용됩니다.
+
+```python
+class Net(nn.Module):
+    def __init__(self, input_size, hidden_size, output_size):
+        super(Net, self).__init__()
+        self.rnn = nn.RNN(input_size, hidden_size, batch_first=True) #RNN 셀 구현
+        self.fc = nn.Linear(hidden_size, output_size, bias=True)
+        
+    def forward(self, x): # 구현한 RNN 셀과 출력층 연결
+        x, status = self.rnn(x)
+        x = self.fx(x)
+        return x
+```
+
+이제 모델에 입력을 넣어 출력값을 확인 해봅시다.
+
+```python
+net = Net(input_size, hidden_size, output_size)
+outputs = net(X)
+print(outputs.shape) #torch.Size([1, 5, 5])
+```
+
+(1, 5, 5)의 크기를 가지는데 각각 배치 차원, 시점 개수, 출력의 크기입니다. 나중에 정확도를 측정할 때 이를 view를 이용하여 펼쳐서 계산합니다. 앞에서 보았듯이 레이블 데이터는 (1, 5)의 크기를 가지는데 정확도를 측정할 떄, 이걸 펼쳐서 계산할 예정입니다.
+
+```python
+print(outputs,view(-1,output_size).shape) #torch.Size([5, 5])
+print(Y.view(-1).shape) #torch.Size([5])
+```
+
+이제 옵티마이저와 손실 함수를 정의해보겠습니다.
+
+```python
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+```
+
+총 100번의 에포크를 학습합니다.
+
+```python
+epochs = 100
+
+for i in range(epochs):
+   	outputs = net(X)
+    loss = criterion(outputs.view(-1,output_size),Y.view(-1)) #view를 통해 Batch 차원을 제거
+    
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+    
+    result = outputs.data.numpy().argmax(axis=2) #최종 예측값인 각 time-step 별 5차워너 벡터에 대해서 가장 높은 인덱스를 선택
+    result_str = ''.join([index_to_char[c] for c in np.squeeze(result)])
+    
+    print(i, "loss: ", loss.item(), "prediction: ", result, "true Y: ", y_data, "prediction str", result_str)
+```
+
+
+
+
 
 
 
@@ -232,9 +484,15 @@ ht = tanh(Wx it + Wh ht-1 + b)
 # 단어 정리
 
 * 피드 포워드 신경망(Feed Forward Neural Network) : 모든 입력 값이 전부 은닉층에서 활성화 함수를 지나 출력층 방향으로만 향하는 신경망 예로는 ANN과 CNN이 있다.
-
-* 셀(cell) : RNN에서 은닉층에서 활성화 함수를 거처 결과를 내보내는 노드. 이 셀은 이전의 값을 기억하려고 하는 메모리 역할도 수행하기 떄문에 메모리 셀 또는 RNN 셀이라고도 표현합니다.
+* 셀(cell) : RNN에서 은닉층에서 활성화 함수를 거처 결과를 내보내는 노드. 이 셀은 이전의 값을 기억하려고 하는 메모리 역할도 수행하기 떄문에 메모리 셀 또는 RNN 셀이라고도 표현
 * 은닉 상태값(hidden state) : 메모리 셀이 출력층 방향과 다음 노드에 보내는 값
+* 입력 게이트(gt, it) : 현재 정보를 기억하는 게이트 gt와 it가 존재하는데 it는 gt의 Ct에 대한 영향력을 결정,     수식은 it = sigmoid(Wxi xt + Whi ht-1 + bi), gt = tanh(Wxi xt + Whi ht-1 + bi)
+* 삭제 게이트(ft) :  이전 시점 t의 셀 상태 Ct-1가 Ct에 대한 영향력을 결정, 수식은                                                  ft = sigmoid(Wxfxt+Whfht−1+bf)
+* 출력 게이트(ot) : 은닉 상태 ht를 결정하는 게이트 수식은 ot = sigmoid(Wxo xt + Who ht-1 + bo)
+* 셀 상태 (Ct) : 셀 상태, 장기 상태 모두 같은 의미이며  셀 상태 수식은 Ct = ft ∘ Ct-1 + it ∘ gt 입니다.
+* 은닉 상태(ht) : 은닉상태 , 단기 상태 모두 같은 의미이며 은닉  상태는 출력 게이트의 결과값과 셀 상태값과의 계산을 통해 구할수 있다. 수식은 ht=ot∘tanh(ct)
+
+
 
 
 
