@@ -1,0 +1,140 @@
+# GoogleNet
+
+## 목차
+
+1. [Abstract](#Abstract)
+2. [1x1 convolution](#1x1 convolution)
+3. [NIN](#NIN (Network in Network))
+4. [Inception](#Inception)
+5. [Auxiliary classifier](#Auxiliary classifier)
+6. [Factorizing convolution](#Factorizing convolution)
+
+
+
+## 1. Abstract 
+
+2014년 ILSVRC에서 구글의 GoogleNet이 1등을 차지하였습니다.
+그리고 이 GoogleNet을 기준으로 이전의 AlexNet, ZFNet과 같은 기존의 CNN의 구조에 큰 변화가 나타나기 시작했습니다.
+
+첫 째, 신경망이 깊어 졌습니다.
+GoogleNet이나 VGGNet은 망의 깊이가  각각 22 layer, 19 layer로 이전의 10 layer 미만이였던 CNN 구조와는 차이가 확실히 납니다.  특히 GoogleNet은 깊이 뿐만 아니라 각 layer의 width도 늘리는 Inception 기술이 적용 됩니다.
+
+둘 째, 연산량이 줄어 들었습니다.
+AlexNet의 경우 자유 파라미터가 6000만개이고 약 6억 3000만개의 connection으로 이루어져 있으며 학습 시간이 일주일 넘게 소요되었습니다. 하지만 GoogleNet에서는 자유 파라미터가 약 500만개로 AlexNet의 1/12배 입니다.
+
+셋 째, 성능이 좋다.
+
+![GoogleNet 성능 그래프](https://blogthumb.pstatic.net/20160418_202/laonple_1460944007069VJcja_PNG/041816_0146_1.png?type=w2)
+
+
+
+ layer의 수는 갈수록 늘어나지만 에러율은 6.7로 좋은 성능을 내고 있습니다.
+
+![GoogleNet 구조](https://user-images.githubusercontent.com/25279765/35002702-d5dccb60-fb2d-11e7-88ac-e29d0319f32b.png)
+
+위 사진은 GoogleNet 구조에 대한 사진입니다.
+
+
+
+
+
+## 2. 1x1 convolution
+
+Convolution은 가까운 픽셀의 정보를 이용하는 개념(local receptive field)을 적용하기 때문에 7x7, 5x5, 3x3과 같이 주변 픽셀들의 활용합니다. 그렇다면 1x1 convolutiond은 하나의 픽셀만을 활용하는데 왜 이러한 개념이 나온걸까?'
+
+결정적인 이유는 feature map의 개수를 줄여 연산량을 줄이기 위함입니다.
+feature map의 개수가 줄어들면 연산량이 줄어들고 또한 연산량이 줄어들면서 망이 더 깊어질 수 있는 여지가 생기게 됩니다. 
+
+1x1 convolution의 경우 1-layer fully-connected neural network라고 하는데, 그 이유는 1x1 convolution이 fully connected와 동일한 방식이기 때문입니다
+만약 입력 feature map의 개수가 4개이고 출력 feature map을 2개로 하고싶은 경우 1x1 convolution은 아래와 같이 표현될 수 있습니다.
+
+![1x1convolution](https://mblogthumb-phinf.pstatic.net/20160511_227/laonple_14629565553583Y9c9_PNG/1x1_conv.png?type=w2)
+
+여담으로 최신 CNN 구조에서 1x1 convolution을 많이 사용합니다.
+
+
+
+
+## 3. NIN(Network in Network)
+
+말그대로 네트워크 속의 네트워크를 뜻합니다.
+일반적인 CNN 구조는 feature extraction 부분이 convolution + pooling layer로 이루어져 있고 classifier 부분은 fully connected neural network로 구성이 됩니다.  하지만 CNN convolution layer가 feature를 추출하는 능력은 우수하지만,  filter의 특징이 linear하다는 특징이 있기 때문에 non-linear한 성질을 갖도록 하기 위해 NIN 설계자는 convolution filter 대신 MLP(Multi-Layer Perceptron)를 사용하였습니다.
+
+![NIN 구조](https://t1.daumcdn.net/cfile/tistory/99B75C3A5AD9A08F1C)
+
+
+
+## 4. Inception
+
+![inception 구조1](https://3qeqpr26caki16dnhd19sv6by6v-wpengine.netdna-ssl.com/wp-content/uploads/2019/02/Example-of-the-Naive-Inception-Module-1.png)
+
+위의 사진은 Inception 구조입니다.
+1x1, 3x3, 5x5등 다양한 크기의 convolution을 적용하여 여러가지 scale의 feature 맵을 추출할 수 있습니다.
+하지만 3x3과 5x5는 연산량이 늘어나는 문제가 생깁니다. 그래서 고안한 방법이 아래의 구조입니다.
+
+
+
+![Inception 구조2](https://www.hellot.net/admin/crosseditor_3.5.0.06/binary/images/000136/20190326140749139_YLAMU7L4.jpg)
+
+
+
+3x3 convolution과 5x5 convolution의 앞에 1x1 convolution을 두어 feature map의 개수(차원)을 줄이게 되면 feature의 여러 scale을 확보하면서도, 연산량의 균형을 맞출 수 있습니다. GoogleNet이 22 layer까지 깊어질 수 있는 것도 1x1 convolution을 통해 연산량을 조절했기 때문입니다.
+
+결론적으로 Inception구조는 다양한 scale의 feature를 확보하는 기술이고 연산량의 문제를 해결하기위해 1x1 convolution을 각 convolution 앞에 두어 해결했습니다.
+
+
+
+## 5. Auxiliary classifier
+
+![Auxiliary classifier](https://blog.kakaocdn.net/dn/bD5poT/btqyQM98EkX/nbxasUSmCO1WnaIyIsvUD0/img.png)
+
+망이 깊어지면서 가장 큰 문제는 vanishing gradient(역전파 소실) 문제이며, 이로 인해 학습 속도가 느려지거나 overfitting 문제가 발생합니다.
+
+신경망의 최종 단에서 error를 역전파(back-propagation)를 시키면서 파라미터 값을 갱신합니다. 그런데 gradient 값들이 0 근처로 가게 되면, 학습 속도가 아주 느려지거나 파라미터의 변화가 거의 없어 학습 결과가 더 나빠지는 현상이 발생 할 수 있습니다. 활성 함수로 sigmoid 함수를 쓰는 경우 미분 값이 0으로 수렴하는 경우가 많기 때문에 vanishing gradient 문제가 심각하게 발생할 수 있습니다.
+
+요즘 DNN에서는 ReLU 활성화함수를 사용합니다. sigmoid에 비해 많은 이점이 있기 때문입니다. 하지만 여러 layer(GoogleNet은 무려 22개의 layer를 가졌다!)를 거치면서 작은 값들이 계속 곱해지다 보면 0으로 수렴하면서 역시 vanishing gradient 문제에 빠질 수 있기고, 망이 깊어 질수록 이 가능성이 커집니다.
+
+Google Net에서는 이 문제를 극복하기 위해 Auxiliar classifier를 중간에 2곳에 두었습니다.
+학습시 Auxiliary classifier를 이용하여 vanishing gradient 문제를 피하고, 실제 모델을 사용할 때는 Auxiliary classifier를 제거하고 fowarding을 시행합니다.
+
+그렇다면 본격적으로 Auxiliary classifier의 작동 방식을 설명하도록 하겠습니다.
+Auxiliary classifier에는 Loss funtion을 가지고 있어서 신경망 중간에서 오차를 계산할 수 있습니다. 그렇기 때문에
+back-propagation 시 Auxiliary classifier와 최종 출력으로 부터의 정상적인 back-propagation을 결합할 수 있습니다. 이렇게 되면 Auxiliary classifier의 back propagation 결과가 더해지기 때문에 gradient가 소실되는 문제를 피할 수 있습니다. 
+
+앞에서 말했 듯이 학습이 끝나고 학습된 DNN을 이용할 때는 Auxiliary classifier를 삭제합니다. 즉 Auxiliary classifier라는 것은 역전파 소실을 문제를 해결하는 도우미 역할만 하고, 학습이 완료되면 제거됩니다.
+
+
+
+## 6. Factorizing convolution
+
+어디서 듣도 보도 못한 용어에 겁부터 먹지만 이 개념도 간단합니다. Factorizing convolution이란 크기가 큰 convolution 커널을 작은 커널 여러 개로 구성된 필터로 만드는 것 입니다. 예를 들어 5x5 convolution 필터는 3x3 필터 두개로 바꿀 수 있고 25(5x5)에서 18(3x3+3x3)로 parameter의 수를 줄어들면서 망이 깊어지는 효과를 얻을 수 있습니다.
+
+
+
+![Factorizing convolution](https://www.researchgate.net/profile/Wang_Su_Jeon/publication/315911462/figure/fig9/AS:668320667815957@1536351472741/Factorizing-convolution-used-in-the-VGGNet-model.jpg)
+
+
+
+위 사진은 5x5 convolution을 3x3 convolution 두 개로 같은 효과를 낸  예시입니다.
+
+5x5 convolution은 2단의 3x3의 convolution이 가능하고 이 경우  28% 만큼 절감이 가능합니다.
+
+![compare with factorizing and none](https://user-images.githubusercontent.com/31475037/63759870-369a3b00-c8f9-11e9-869d-0ae2902f7ed0.PNG)
+
+
+
+7x7 convolution의 경우도 3 단의 3x3 convolution으로 표현이 가능하면 49개에서 27개의 파라미터로 줄일 수 있습니다. 파라미터가 줄어들면 그만큼 망의 깊이가 깊어질 여지가 생긴다는 의미가 됩니다.
+
+factorizing 기법에서는 정사각형을 유지하지 않고 분해하는 것이 가능합니다. 아래의 사진으로 직접 보여드리겠습니다.
+
+![non-symmetric factorizing](data:image/png;base64,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)
+
+
+
+
+
+3x3 convolution 을 3x1 과 1x3 convolution으로 표현하였습니다.  9개에서 6개로 파라미터 수를 줄여 33%의 절감 효과를 볼 수 있습니다. 비슷하게 nxn convolution은 1xn 과 nx1로 분해가 가능합니다. n이 크면 클수록 파라미터의 절감 효과가 커집니다.
+
+![compare with non-symetric factorizing and none](https://lh3.googleusercontent.com/proxy/7KMPLUYADiUoooXxdnFRB1l-PgVRMs3ovENB7QNCpKxbQbt5YYRv37cs8Bbx-i398IE4_UlKRT0gdGNa77yUmamktQ6hqpgBqb6bb14qPgblBOFvuAcz-MTSXdq3rd6W1I0VvMGIdcAZOza-oHuaEo0dEip9ndNeWe6HdY5zAA)
+
+factorizing convolution란 다시 정리해서 큰 크기의 convolution을 작은 크기의 convolution 여러개로 대채하여 parameter의 개수를 줄이면서 연산량을 줄이는 것입니다. 이는 망을 깊게하도록 할 때 중요한 역할을 합니다.
