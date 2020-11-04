@@ -89,5 +89,9 @@
 규제 (Regularization)는 모델의 가중치가 큰 값을 가질 때 가중치 업데이트에 제약을 주어 원래보다 더 적은 값으로 업데이트가 되도록 합니다. 
 
 가중치 규제 방법
-1. L1 규제
-2. L2 규제
+1. L1 규제: 가중치 계수들의 <strong>절댓값</strong>의 합계를 Cost에 추가 L1규제는 가중치의 L1 노름이라고 한다.
+2. L2 규제: 가중치 계수들의 <strong>제곱</strong>의 합계를 Cost에 추가 L2규제는 가중치의 L2 노름이라고 한다.
+
+파이토치에서 옵티마이저의 weight_decay 매개변수를 설정함으로써 L2 규제를 적용할 수있다
+```
+optimizer = torch.optim.Adam(model.parameters(),lr=1e-4, weight_decay=1e-5)
