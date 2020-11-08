@@ -2,109 +2,113 @@
 
 * 이 글은 kaggle 문제를 풀어 보면서 느낀 팁들과 데이터 분석에 기본적인 코드 흐름을 분석하여 기술한 내용이다.
 
+* (2020.11.4) Pytorch로 시작하는 딥러닝 책을 읽고 수정합니다.
 
 
-## 1.데이터 수집하기
+## 1.문제 정의와 데이터셋 만들기
 
-* 머신 러닝 모델을 구현하기 위해선 가장 먼저 데이터를 수집해야 한다.
+문제 정의를 위한 두가지는 데이터셋과 문제 유형이다.
+예를 들어 레스토랑 리뷰 데이터로 그 레스토랑의 전문 분야를 분류한다고 해보면, 모든 데이터셋의 범주를 레이블로 설정해야한다. 그리고 이런 작업은 수작업으로 설정해야된다.
 
+문제 유형을 파악하면 이진 분류, 다중 분류, 스칼라 회귀 또는 벡터 회귀 여부를 결정하는 데 도움이 된다. 때로는 클러스터링 또는 차원 축소와 같은 비지도학습을 사용 할 수 있어야 한다.
 
+문제 유형을 파악했다면 이젠 어떤 종류의 아키텍처, 오차 함수 및 옵티마이저를 사용할 것인지 결정하기 쉬워진다. 분류 문제의 경우에는 확률값이 출력되므로 오차 함수로 Cross-Entropy가 적절하다.
 
-## 2.컬럼의 의미 꿰뚫기
-
-
-
-> 수집한 데이터의 각 컬럼의 뜻과 각 컬럼의 내제적 의미와 상호 연관성을 찾아내야 한다. 
->
-> 데이터를 분석하기 위해서는 대부분 직관력으로 찾아 낼 수 있다.
->
-> 예를 들면 타이타닉 호에서 나이가 어린 사람이 많이 생존 했을까?  아니면 나이가 많은 사람이 많이 생존 했을까?  당신은 나이가 어린 사람이 더 많이 생존 했을 것이라 생각 했을 것이다. 
->
-> 이 과정이 결국 직관을 이용한 데이터 분석이다. 
->
-> 그런데 만약 데이터를 분석하기 위한 직관력이 부족하거나 직관적으로 찾기 어려운 데이터를 만났다면 다른 방법이 없을까? 
->
-> 그 해결책은 간단하다. 그래프를 그려보면 된다. 
->
-> python에는 그래프를 그리는데 도움을 주는 툴인 matplotlib가 존재하다
->
-> 
+데이터셋을 만들고 문제 유형을 파악했다면 다음과 같은 가정을 전제로 모델을 구축한다
+- 데이터에는 입출력의 대응 관계에 숨겨진 패턴이 있다.
+- 모델을 학습시킬 수 있는 충분한 데이터를 확보했다.
+- 미래의 경험하지 않은 데이터는 과거 데이터가 묘사하는 패턴과 유사할 것이다.
 
 
+## 2. 모델 평가 기준
 
-## 	특징 추출하기
+모델을 평가하는 기준은 비즈니스 목표로 결정된다. 예를 들어, 풍차의 기계 고장을 예측하는 문제에서 가장 중요한 것은 장애가 없는 것을 알아내는 것이 아니라. 장애를 정확하게 예측하는 횟수다. 이경우 단순 정확도는 모델 평가 지표로 사용하기에 적절하지 않다. 풍차에 문제가 없을 때 모델은 항상 정확하다. 하지만 풍차는 대부분 정상적으로 작동하기 때문에 기계 고장이 없다는 예측은 맞을 확률이 높다. 이 장애 예측 모델은 98%의 정확도를 갖지만, 실패에 대한 예측은 매번 틀린다면, 이 모델은 실무에 사용되기 어렵다. 그렇기 때문에 모델에 대한 올바른 지표를 선정하는 것이 매우 중요하다.
 
-* 각 컬럼의 의미를 꿰뚫고 그 컬럼들의 특징들을 추출하는 이 두 과정을(이름의  Mr.  ,Mrs.  정보를 통해 여자와 남자 특징을 추출할 수 있다 ) 유식한 말로 feature engineering이라고 한다..
+각 레이블마다 데이터 분포가 균등한 문제는(영화 장르 분류) ROC와 AUC를 평가 지표로 사용합니다.
+하지만 특정 레이블의 데이터가 많은 불균형한 데이터셋에서는(기계의 고장 예측) 정밀도(Precision)와 리콜(Recall)을 사용한다.
+랭킹 문제를 다룰 때에는 mAP(mean Average Precision)을 사용할 수 있다.
+
+## 3. 평가 프로토콜 (규칙)
+모델의 평가 지표를 정했다면, 이제는 데이터셋을 평가하는 방법을 결정해야 한다. 일반적으로 다음 세 가지 방법 중 하나를 선택해 사용한다.
+
+- 홀드아웃 검증 셋: 데이터가 충분히 많을 경우, 일반적으로 많이 사용된다.
+- K-겹 교차 검증: 데이터가 제한적일 때 이 전략을 사용하면 데이터의 여러 부분에서 평가를 진행할 수 있다.
+- 반복 K-겹 검증:  모델의 성능을 더 잘 파악할 수 있다.
+
+
+## 4. 데이터 준비
+다양한 형식의 데이터를 벡터화(Vectorization)한 후, 이 데이터를 파이토치 텐서로 만든다. 그리고 모든 특성의 범위가 일정하게 조정됐고, 정규화됐는지 확인한다. 데이터가 부족하면 Augmentation 기법을 적용한다.
+
+## 5. 기준 모델
+기준 모델은 기준 점수를 넘어야 한다. 개와 고양이 분류를 분류 한다면 기준 정확도는 0.5가 된다. 이 단계에서는 모델에 규제 또는 드롭아웃을 적용하지 않는다. 
+기준 모델을 만들 때는 세 가지 선택을 해야한다.
+
+- 모델의 마지막 레이어 선정: 회귀 문제에서, 기준 모델의 마지막 레이어는 스칼라를 출력해야되고 벡터 회귀 문제는 Bounding Box를 예측하는 기준 모델의 경우 4개의 값을 출력해야 한다. 이진 분류는 시그모이드를, 다중 분류는 소프트맥스를 사용해야 한다.
+- 오차 함수 선택: 오차 함수는 문제 유형으로 결정된다. 회귀 문제는 MSE(Mean Square Error)를 사용하고 분류 문제는 Cross Entropy를 사용한다.
+- 최적화: 적합한 최적화 알고리즘(Optimizer)과 하이퍼파라미터를 선택하는 일은 상당히 어렵다. 최적의 값은 반복적인 실험으로 찾을 수 있다. 대부분의 경우 Adam 또는 RMSprop 옵티마이저가 잘 작동한다.
+
+## 6. 모델 과대적합 시키기
+바로 이전에 기준 점수를 충분한 역량을 가진 기준 모델을 만들었다. 기준 모델을 만든 뒤에는 기준 역량을 늘리기 위해 과대적합을 시킬 필요가 있다. 과대적합을 시키는 방법은 다음과 같다.
+
+- 기존 아키텍쳐에 레이터 추가
+- 기존 레이어의 가중치 늘리기
+- 아키텍처의 학습 횟수 늘리기 (Epoch 늘리기)
+
+학습은 학습 정확도는 증가하지만 검증 정확도가 떨어지기 시작하면 학습을 중단 시킨다. 
+이것이 바로 모델이 과대적합되고 있다는 증거다. 이 단계에 도달하면 가중치 규제 기법을 적용하면 된다.
+간단한 분류 문제는 작은 아키텍쳐로 해결할 수 있다. 하지만 안면 인식과 같은 복잡한 문제의 경우, 아키텍쳐에 충분한 표현력이 필요하기 떄문에 아키텍쳐의 크기를 늘려야한다. 간단한 분류 문제에 비해 더 많은 Epoch가 필요하다 
 
 
 
-## 4.모델링
+## 7. 가중치 규제 적용
 
-* 모든 feature를 추출했다면 이제 남은 일은 인공지능 모델링을 한다.  
+튜닝할 매개변수가 많기 때문에 모델을 규제하는 가장 좋은 방법을 찾는 것은 정말 까다롭다. 모델을 규제하기 위해 조정할 수 있는 부분은 다음과 같다
 
-* 아래의 코드는 pytorch를 이용하여 모델링을 하였다.
+ - 드롭아웃 추가
+ - 아키텍쳐 변경
+ - L1 또는 L2 규제 적용
+ - 학습률 변경
+ - 테이터셋 늘리기
 
-```python
-def model(nn.Model):
-	def __init__(self,x):
-		super.__init__(model,self)
-		self.fc1 = nn.Linear(100,200)
-		self.fc2 = nn.Linear(200,300)
-		self.fc3 = nn.Linear(300,200)	
-		self.fc4 = nn.Linear(200,100)
-		self.fc5 = nn.Linear(100, 10)
-		self.dropout = nn.Dropout(p=0.5)
+ 하이퍼파라미터를 조정하기 위해 검증 데이터셋을 사용한다. 하이퍼파라미터를 반복해 조정하는 과정에서 데이터 유출이 될 수 있다. 그래서 데스트에 사용되는 데이터셋이 홀드아웃 데이터인지 확인해야 한다. 
 
-	def forward(self,x):
-		x = F.relu(self.fc1(x))
-		x = F.relu(self.fc2(x))
-		x = F.relu(self.fc3(x))
-		x = F.relu(self.fc4(x))
-		x = F.relu(self.fc5(x))
+
+## 8. 학습률 선정 방법
+파이토치는 학습 속도를 조정하는 몇 가지 기술을 제공한다. 파이토치가 제공하는 학습률 관련 기능은 torch.optim.lr_scheduler 패키지에 포함되어 있다. 그럼 lr_schedular로 학습률을 조정하는 방법을 알아보자.
+ - StepLR: 이 스케쥴러는 두 개의 매개변수를 받는다. 하나는 학습 속도를 변경하는 주기를 나타내는 step_size이고 두 번째는 학습률을 변경 정도를 나타내는 gamma다. step_size가 10 learning_rate 0.01, gamma가 0.1일 경우 10 에폭마다 learning_rate에 gamma를 곱한다. 즉 10 에폭일 때 학습률은 0.001 이고 20 에폭일 떄 0.0001 이 된다. StepLR의 구현 코드는 다음과 같다
+ ``` python
+ scheduler  = StepLR(optimizer, step_size=10, gamma=0.1)
+ for epoch in range(100):
+    scheduler.step()
+    train(...)
+    validate(...)
 ```
 
-
-
-## 5.훈련
-
-* 모델을 구현 했으면 feature engineering을 거친 train data들을 모델에 넣어서 원하는 결과값이 나오도록 W(가중치),b(편향)의 값을 조정한다.
-
-* 각 feature를 모델에 넣어서 훈련 시키는 코드를 아래에 적었다. 그 흐름을 직관적으로 이해하면 된다.
-
+- MultiStepLR: MultiStepLR은 stepLR과 작동 방식이 유사하지만, 학습률이 변경되는 주기를 일정한 간격으로 유지하지 않는다. 학습률을 변경하는 주기는 목록으로 제공된다. 예를 들면 10, 15, 30의 목록으로 주어지면 각 단계에서 학습률에 감마를 곱한다. MultiStepLR의 구현 코드는 다음과 같다
 ```python
-or epoch in range(n_epochs):
-    for i in range(batch_no):
-        start = i * batch_size
-        end = start + batch_size
-        x_var = Variable(torch.FloatTensor(X_train[start:end]))
-        y_var = Variable(torch.FloatTensor(y_train[start:end]).squeeze())
-
-        optimizer.zero_grad()
-        output = model(x_var)
-        loss = torch.sqrt(criterion(torch.log(output.squeeze()), torch.log(y_var)))
-        loss.backward()
-        optimizer.step()
-
-    if epoch % 1 == 0:
-        X_val = Variable(torch.FloatTensor(X_val))
-        y_val = Variable(torch.FloatTensor(y_val))
-        val_output = model(X_val)
-        val_loss = criterion(val_output, y_val.squeeze())
-
-        if val_loss < val_loss_min:
-            print("Validation loss decreased ({:6f} ===> {:6f}). Saving the model...".format(val_loss_min, val_loss))
-            torch.save(model.state_dict(), "./output/model.pt")
-            val_loss_min = val_loss
-
-        print('')
-        print("Epoch: {} \tValidation Loss: {}".format(epoch+1, val_loss))
-
+scheduler = MultiStepLR(optimizer, milestones=[30, 80], gamma=0.1)
+for epoch in range(100):
+    schedular.step()
+    train(...)
+    validate(...)
 ```
-
+- exponentialLR:각 에폭에 대해 감마 값을 사용해 학습률의 배수로 학습률을 설정한다.
+- ReduceLROpPLateau: 일반적인 학습률 전략중 하나로 학습 오차, 검증 오차 또는 정확도와 같은 특정 측정 항목이 정체될 때 학습률을 변경한다.(굉장히 똑똑한 친구이다!) 학습률의 초깃값의 2 ~ 10배까지 줄이는 것이 일반적이다. ReduceLROpLateau의 구현 코드는 다음과 같다
+```python
+optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
+scheduler = ReduceLROpLateau(optimizer, 'min')
+for epoch in range(10):
+    train(...)
+    val_loss = validate(...)
+    # validate() 함수를 호출한 후  step 메서드가 호출되어야 한다
+    schduler.step(val_loss)
+```
 ## 요약
 
-1. 데이터 수집
-2. 컬럼의 의미 찾기
-3. feature 추출하기
-4. modeling 하기
-5. trainning 하기
+1. 문제 정의와 데이터셋 만들기
+2. 모델 평가 기준
+3. 평가 프로토콜
+4. 데이터 준비
+5. 기준 모델
+6. 모델 과대적합 시키기
+7. 
