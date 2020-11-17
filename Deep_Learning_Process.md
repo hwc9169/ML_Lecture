@@ -101,6 +101,7 @@ for epoch in range(10):
     train(...)
     val_loss = validate(...)
     # validate() 함수를 호출한 후  step 메서드가 호출되어야 한다
+    # 스케듈러에 오차를 전송하여 이 값이 정체될 때 학습률을 변경한다.
     schduler.step(val_loss)
 ```
 ## 요약
